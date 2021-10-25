@@ -45,7 +45,11 @@ const Root: React.VFC = () => {
 
   return (
     <Layout>
-      <Content>
+      <Content
+        style={{
+          height: 800,
+        }}
+      >
         <Space align="center">
           <div
             ref={ref}
