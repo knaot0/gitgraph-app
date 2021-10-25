@@ -54,10 +54,11 @@ const Root: React.VFC = () => {
           <div
             ref={ref}
             style={{
+              overflow: 'auto',
               background: 'white',
               width: 800,
               height: 800,
-              overflow: 'auto',
+              padding: 20,
             }}
           >
             <Gitgraph
