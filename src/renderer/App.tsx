@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   Layout,
+  notification,
   Select,
   Space,
 } from 'antd';
@@ -161,13 +162,24 @@ const Root: React.VFC = () => {
             <Form<{ branchName: string }>
               layout="inline"
               onFinish={({ branchName }) => {
+                if (!branchName) {
+                  notification.error({
+                    message: `Please input a new branch name!`
+                  })
+                }
+
                 if (
                   !gitgraph ||
                   branches.map((b) => b.name).includes(branchName)
                 )
                   return;
 
-                setBranches([...branches, gitgraph.branch(branchName)]);
+                const newBranch = gitgraph.branch(branchName)
+                setBranches([...branches, newBranch]);
+                setCurrentBranch(newBranch)
+                notification.success({
+                  message: `Switched to a new branch '${branchName}'`
+                })
               }}
             >
               <Form.Item name="branchName">
