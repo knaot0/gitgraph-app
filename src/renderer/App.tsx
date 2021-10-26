@@ -97,8 +97,8 @@ const Root: React.VFC = () => {
               toName: string;
             }>
               onFinish={({ fromName, toName }) => {
-                const branch = branches.find((b) => b.name === fromName);
-                branch?.merge(toName);
+                const branch = branches.find((b) => b.name === toName);
+                branch?.merge(fromName);
               }}
             >
               <Form.Item name="fromName" label="Source branch">
