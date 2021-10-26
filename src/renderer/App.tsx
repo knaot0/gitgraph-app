@@ -2,7 +2,16 @@ import { useRef, useState } from 'react';
 import { MemoryRouter as Router, Switch, Route } from 'react-router-dom';
 
 import { DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Layout, Select, Space } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Divider,
+  Form,
+  Input,
+  Layout,
+  Select,
+  Space,
+} from 'antd';
 
 import domToImage from 'dom-to-image';
 import { saveAs } from 'file-saver';
@@ -25,6 +34,9 @@ const Root: React.VFC = () => {
   const [orientation, setOrientation] = useState<Orientation>();
   const [template, setTemplate] = useState<TemplateName>(TemplateName.Metro);
 
+  const [currentBranch, setCurrentBranch] =
+    useState<BranchUserApi<ReactSvgElement>>();
+
   const [branches, setBranches] = useState<
     Array<BranchUserApi<ReactSvgElement>>
   >([]);
@@ -32,7 +44,9 @@ const Root: React.VFC = () => {
   const reset = () => {
     if (!gitgraph) return;
     gitgraph.clear();
-    setBranches([gitgraph.branch('master')]);
+    const masterBranch = gitgraph.branch('master');
+    setCurrentBranch(masterBranch);
+    setBranches([masterBranch]);
   };
 
   const download = () => {
@@ -70,16 +84,67 @@ const Root: React.VFC = () => {
               }}
             >
               {(gitgraph) => {
+                const masterBranch = gitgraph.branch('master');
+                setCurrentBranch(masterBranch);
+                setBranches([masterBranch]);
                 setGitgraph(gitgraph);
-                setBranches([gitgraph.branch('master')]);
               }}
             </Gitgraph>
           </div>
           <Space direction="vertical" style={{ margin: 20 }}>
+            <Form<{
+              fromName: string;
+              toName: string;
+            }>
+              onFinish={({ fromName, toName }) => {
+                const branch = branches.find((b) => b.name === fromName);
+                branch?.merge(toName);
+              }}
+            >
+              <Form.Item name="fromName" label="Source branch">
+                <Select placeholder="Source branch">
+                  {branches.map((branch) => (
+                    <Option value={branch.name}>{branch.name}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <Form.Item name="toName" label="Target branch">
+                <Select placeholder="Target branch">
+                  {branches.map((branch) => (
+                    <Option value={branch.name}>{branch.name}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item>
+                <Button type="primary" htmlType="submit">
+                  Merge
+                </Button>
+              </Form.Item>
+            </Form>
+
+            <Divider />
+
+            <Form.Item label="Current branch">
+              <Select<string>
+                placeholder="Source branch"
+                value={currentBranch?.name}
+                onChange={(branchName) => {
+                  const branch = branches.find((b) => b.name === branchName);
+                  if (!branch) return;
+                  setCurrentBranch(branch);
+                }}
+              >
+                {branches.map((branch) => (
+                  <Option value={branch.name}>{branch.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
             <Form<{ commitMessage: string }>
               layout="inline"
               onFinish={({ commitMessage }) => {
-                gitgraph?.commit(commitMessage);
+                currentBranch?.commit(commitMessage);
               }}
             >
               <Form.Item name="commitMessage">
@@ -88,30 +153,10 @@ const Root: React.VFC = () => {
 
               <Form.Item>
                 <Button type="default" htmlType="submit">
-                  Commit on HEAD
+                  Commit
                 </Button>
               </Form.Item>
             </Form>
-
-            {branches.map((branch) => (
-              <Form<{ commitMessage: string }>
-                key={branch.name}
-                layout="inline"
-                onFinish={({ commitMessage }) => {
-                  branch.commit(commitMessage);
-                }}
-              >
-                <Form.Item name="commitMessage">
-                  <Input placeholder="Commit message" />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button type="default" htmlType="submit">
-                    Commit on {branch.name}
-                  </Button>
-                </Form.Item>
-              </Form>
-            ))}
 
             <Form<{ branchName: string }>
               layout="inline"
@@ -157,19 +202,7 @@ const Root: React.VFC = () => {
                 </Form>
               )}
 
-            {branches.map((to) =>
-              branches
-                .filter((from) => to.name !== from.name)
-                .map((from) => (
-                  <Button
-                    type="default"
-                    key={`${to.name}->${from.name}`}
-                    onClick={() => from.merge(to)}
-                  >
-                    Merge {to.name} into {from.name}
-                  </Button>
-                ))
-            )}
+            <Divider />
 
             <Space>
               <Button danger icon={<DeleteOutlined />} onClick={reset}>
